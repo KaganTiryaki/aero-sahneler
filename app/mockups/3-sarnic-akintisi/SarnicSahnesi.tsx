@@ -11,7 +11,7 @@ import {
   YON,
   cepheler,
   suKabarmasi,
-} from "./dalga";
+} from "@/lib/dalga";
 
 /*
  * SARNIÇ AKINTISI

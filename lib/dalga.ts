@@ -1,5 +1,8 @@
 /**
- * SARNIÇ AKINTISI — dalga alanının tek kaynağı.
+* Dalga alanı — doğrusal bir kabarma cephesi.
+ *
+ * Sarnıçta sütunların dibinden geçen desen buydu; Yedi Eşik koridorunun
+ * zeminine de aynı alan taşındı, o yüzden lib/ altında ortak duruyor.
  *
  * Aynı fonksiyon üç yerde çalışır ve üçü de birbirine bağlı kalmak zorunda:
  *   1. su yüzeyinin shader'ı (yansımayı öteleyen eğim)

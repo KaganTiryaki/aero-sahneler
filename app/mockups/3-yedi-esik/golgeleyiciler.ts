@@ -1,3 +1,4 @@
+import { DALGA_GLSL, YON } from "@/lib/dalga";
 import { RAMPA_US, TAVAN_Y, UZAK, ZEMIN_Y } from "./enfilad";
 
 /**
@@ -30,26 +31,31 @@ uniform vec3 uDerin;
 uniform vec3 uBeyaz;
 uniform vec3 uCyan;
 uniform float uAkis;
+/** Kaustik: sarnıçtan gelen kabarma cephesi. uKaustik=0 → sahne eski hâli. */
+uniform vec2 uCephe;
+uniform float uKaustik;
 
 varying vec3 vW;
 varying vec3 vN;
 varying float vD;
 varying float vSeed;
 
-float hash21(vec2 p) {
+${DALGA_GLSL}
+
+float sivaHash(vec2 p) {
   p = fract(p * vec2(123.34, 345.45));
   p += dot(p, p + 34.345);
   return fract(p.x * p.y);
 }
 
-float vnoise(vec2 p) {
+float sivaGurultu(vec2 p) {
   vec2 i = floor(p);
   vec2 f = fract(p);
   f = f * f * (3.0 - 2.0 * f);
-  float a = hash21(i);
-  float b = hash21(i + vec2(1.0, 0.0));
-  float c = hash21(i + vec2(0.0, 1.0));
-  float d = hash21(i + vec2(1.0, 1.0));
+  float a = sivaHash(i);
+  float b = sivaHash(i + vec2(1.0, 0.0));
+  float c = sivaHash(i + vec2(0.0, 1.0));
+  float d = sivaHash(i + vec2(1.0, 1.0));
   return mix(mix(a, b, f.x), mix(c, d, f.x), f.y);
 }
 
@@ -57,7 +63,7 @@ float fbm(vec2 p) {
   float s = 0.0;
   float a = 0.5;
   for (int i = 0; i < 4; i++) {
-    s += a * vnoise(p);
+    s += a * sivaGurultu(p);
     p = p * 2.07 + 11.3;
     a *= 0.5;
   }
@@ -107,6 +113,27 @@ void main() {
     // derinleşir. Bu bir CSS perdesi değil — sahnenin kendi ışığı.
     float rr = length(vec2(vW.x / 10.5, (vW.y + 0.9) / 8.0));
     col *= 1.09 - 0.32 * smoothstep(0.45, 2.35, rr);
+  }
+
+  // --- kaustik: sarnıçtan taşınan kabarma cephesi, YALNIZ zeminde ---------
+  // Sarnıçta bu desen sütunların dibinden geçiyordu; burada koridorun taş
+  // zemininde yürüyor. Kaynak noktası yok, cephe var — koridoru eşiklerin
+  // içinden yanlamasına geçiyor, yani sirkülasyonun kendisi.
+  //
+  // Zeminle sınırlı: duvara/tavana bulaşırsa mimari "su altı" oluyor ve
+  // metnin arkası kıpırdayıp okunurluğu bozuyor. Zemin zaten metnin altında.
+  if (uKaustik > 0.001 && an.y > 0.5 && N.y > 0.0) {
+    float s = suAlani(vW.xz, vec2(${YON[0].toFixed(4)}, ${YON[1].toFixed(4)}), uCephe, uAkis, 0.55);
+    // Kenar GENİŞ olmak zorunda. Dar smoothstep (0.15→1.05) + güçlü additive
+    // zemine keskin kenarlı neon bir şerit çiziyordu — su yansıması değil lazer.
+    // Sarnıçta bu alan suyun ALTINDAydı; burası parlak sıva, aynı kazanç
+    // bambaşka bir şey üretiyor. RENDER'DA GÖRÜLDÜ.
+    float isik = smoothstep(-0.25, 1.32, s);
+    // Uzakta piksel altına düşüp titriyor → derinlikle söndür.
+    isik *= 1.0 - smoothstep(0.30, 0.72, k);
+    // Taşın nemi kadar: görünsün ama zemini rengine boyamasın.
+    col += uCyan * isik * 0.15 * uKaustik;
+    col *= 1.0 + 0.07 * isik * uKaustik;
   }
 
   // --- derin uç: kaçış noktası küçük ve koyu bir delik olarak kalsın ----

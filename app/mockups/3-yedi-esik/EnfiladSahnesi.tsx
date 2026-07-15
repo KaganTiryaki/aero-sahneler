@@ -30,6 +30,9 @@ import {
   ZEMIN_Y,
   ZERRE,
 } from "./enfilad";
+// DURGUN_CEPHE = uniform'un başlangıç değeri; reduced-motion'da döngü hiç
+// çalışmadığı için tek statik karede kaustik bu donmuş cephede kalır.
+import { cepheler, DURGUN_CEPHE } from "@/lib/dalga";
 import {
   sivaFragment,
   sivaVertex,
@@ -166,6 +169,9 @@ export function EnfiladSahnesi() {
         uBeyaz: { value: sabitRenk(SIVA_BEYAZ) },
         uCyan: { value: sabitRenk(CYAN) },
         uAkis: { value: 0 },
+        // Kaustik: sarnıçtan taşınan kabarma cephesi, koridorun zemininde.
+        uCephe: { value: new THREE.Vector2(DURGUN_CEPHE[0], DURGUN_CEPHE[1]) },
+        uKaustik: { value: 1 },
       },
     });
 
@@ -283,6 +289,10 @@ export function EnfiladSahnesi() {
     const ciz = () => {
       const dt = Math.min(saat.getDelta(), 0.05);
       tozMat.uniforms.uZaman.value = saat.elapsedTime;
+
+      // Kaustik cephesi zamanla yürür — treadmill'den bağımsız, kendi ritmi var.
+      const [c1, c2] = cepheler(saat.elapsedTime);
+      sivaMat.uniforms.uCephe.value.set(c1, c2);
 
       yumusak += (scrollAkisi() - yumusak) * Math.min(1, 6 * dt);
       yurut(TABAN_HIZ * dt + (yumusak - onceki));
