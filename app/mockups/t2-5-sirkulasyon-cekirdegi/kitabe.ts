@@ -15,11 +15,25 @@ import type { Istasyon } from "@/components/yolculuk/istasyonlar";
  * Şaft koyu: mürekkep AÇIK. Doku alfa taşır, rengi malzeme verir.
  */
 
-/** Panel ölçüsü (birim). Uç duvar 8.4 geniş; kenarda pay bırakıyoruz. */
-export const PANEL_EN = 6.8;
-export const PANEL_BOY = 4.6;
+/*
+ * PANEL DAR VE YÜKSEK — bir kitabe sütunu. Sebebi geometri, tercih değil:
+ *
+ * Uç duvar z ∈ [-4.2, 4.2], yani 8.4 geniş. Ama kol duvarın ORTASINA doğru
+ * koşmuyor; z = ±3.4'te, kenara yakın. İkisi birden istenemiyor:
+ *   · Paneli kolun hattına (3.4) koy + geniş tut → duvarın dışına taşar,
+ *     harfler boşlukta kalır. (6.8 genişlikte %38'i taşıyordu: "ganizasyon".)
+ *   · Paneli duvarın ortasına (0) koy → duvarda kalır ama 3.4 birim yanında,
+ *     karşında değil.
+ * Panel daraldıkça kolun hattına daha çok yaklaşabiliyor: 3.4 enle merkez
+ * 2.3'e kadar gidiyor, bakış hattından yalnız 1.1 birim sapma kalıyor.
+ * Dar sütun hem duvarda duruyor hem karşında.
+ */
+export const PANEL_EN = 3.4;
+export const PANEL_BOY = 5.0;
+/** Panelin duvar kenarına bırakacağı pay — taşmayı bu engelliyor. */
+export const PANEL_PAY = 0.2;
 /** Birim başına piksel. */
-const PPB = 190;
+const PPB = 260;
 
 const EN_PX = Math.round(PANEL_EN * PPB);
 const BOY_PX = Math.round(PANEL_BOY * PPB);

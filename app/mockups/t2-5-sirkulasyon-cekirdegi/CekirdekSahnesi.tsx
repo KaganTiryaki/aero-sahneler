@@ -3,7 +3,7 @@
 import { useEffect, useRef } from "react";
 import * as THREE from "three";
 import type { Istasyon } from "@/components/yolculuk/istasyonlar";
-import { kitabeleriKur, PANEL_BOY, PANEL_EN } from "./kitabe";
+import { kitabeleriKur, PANEL_BOY, PANEL_EN, PANEL_PAY } from "./kitabe";
 import {
   GOZ_BOY,
   ISIK_YON,
@@ -450,15 +450,20 @@ export function CekirdekSahnesi({ disiplinler, duraklar, sinif }: Props) {
         const m = new THREE.Mesh(panelGeo, mat);
         const yon = sahanlikYon(i);
         /*
-         * Z, şaftın merkezi (0) DEĞİL kolun kendi merkezi. Kol z=∓3.4'te
-         * koşuyor; panel 0'da bırakılınca duvar karşında değil 3.4 birim
-         * YANINDA kalıyordu — RENDER'DA GÖRÜLDÜ. Kolun z'sine oturunca
-         * kitabe yolun tam ucunda.
+         * Z, şaftın merkezi (0) DEĞİL kolun hattı — ama duvarın içinde kalmak
+         * şartıyla. Kol z=∓3.4'te koşuyor, duvar z=±4.2'de bitiyor: panel tam
+         * 3.4'e oturtulunca yarısı duvarı aşıp boşlukta kalıyor ve harfler
+         * kesiliyordu ("Organizasyon" → "ganizasyon"). Sınır, panelin kenarını
+         * duvarın içinde tutan en uç değer; kelepçe onu kolun tarafına dayıyor.
          */
+        const sinir = SAFT.zMax - PANEL_EN / 2 - PANEL_PAY;
         m.position.set(
           yon * (SAFT.xMax - 0.02),
-          SAHANLIK_Y[i] + 1.35,
-          kolListe[i].zMerkez,
+          // +1.9 → +2.9: sahanlığın korkuluğu (0.95 boy) kolun ortasından
+          // bakınca kitabenin gövdesini çaprazlıyordu. Kitabe korkuluk hattının
+          // üstüne çıkınca metnin önü açık, korkuluk altında kalıyor.
+          SAHANLIK_Y[i] + 2.9,
+          THREE.MathUtils.clamp(kolListe[i].zMerkez, -sinir, sinir),
         );
         // Düzlem varsayılan +Z bakar; içeri döndür.
         m.rotation.y = -yon * Math.PI / 2;
