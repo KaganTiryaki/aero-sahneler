@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { Fraunces, Hanken_Grotesk, IBM_Plex_Mono } from "next/font/google";
 import { nav, site } from "@/lib/content";
-import { istasyonlariKur } from "./istasyonlar";
+import { istasyonlariKur } from "@/components/yolculuk/istasyonlar";
 import { Sahne } from "./Sahne";
 
 // latin-ext ZORUNLU: İ ı ş ğ ç ö ü. Yoksa tofu.

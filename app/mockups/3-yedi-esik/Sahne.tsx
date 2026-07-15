@@ -1,8 +1,8 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import type { Istasyon } from "./istasyonlar";
-import { Yolculuk } from "./Yolculuk";
+import type { Istasyon } from "@/components/yolculuk/istasyonlar";
+import { Yolculuk } from "@/components/yolculuk/Yolculuk";
 import styles from "./yedi.module.css";
 
 /**

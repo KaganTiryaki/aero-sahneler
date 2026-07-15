@@ -84,11 +84,6 @@
  * = bir eşik. Bu blok olmadan sayfa kaydırılamaz — Sirkülasyon Çekirdeği'nin
  * takıldığı yer tam olarak burasıydı.
  */
-.yol {
-  position: relative;
-  z-index: 0;
-  pointer-events: none;
-}
 
 /* ---- alt şerit --------------------------------------------------------- */
 .alt {

@@ -6,6 +6,17 @@
  * hiçbir metin JS'e bağlı olarak kaybolmuyor.
  */
 
+/*
+ * Yolculuğun uzunluğu. Duraklar canlıyken fixed olduğu için sayfaya yüksekliği
+ * veren tek şey bu; yüksekliği effect veriyor, yani reduced-motion'da 0 kalıyor
+ * ve okunur belgenin altında boşluk oluşmuyor.
+ */
+.yol {
+  position: relative;
+  z-index: 0;
+  pointer-events: none;
+}
+
 .kap {
   position: relative;
   z-index: 2;
