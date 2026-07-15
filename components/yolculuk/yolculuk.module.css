@@ -27,22 +27,40 @@
 }
 
 /*
- * Koridorun yakın duvarları AÇIK sıva (#f7fbf9) — metin bu yüzden koyu teal
- * mürekkep. Beyaz metin okunmazdı; kontrast sahnenin kendi ışığından geliyor,
- * arkasına perde/scrim konmuyor.
+ * Mürekkep değeri sahneye göre .koyu / .acik ile seçilir — duvar aydınlıksa
+ * koyu, şaft koyuysa açık. Kontrast sahnenin kendi ışığından gelir; arkasına
+ * perde/scrim konmaz.
  */
 .duvar {
-  --murekkep: #0e4a46;
-  --soluk: rgba(14, 74, 70, 0.66);
-  --hayalet: rgba(14, 74, 70, 0.42);
-  --cyan: #0d7d92;
-
   max-width: 34rem;
   margin: 0 auto;
   text-align: center;
   color: var(--murekkep);
-  /* Sıva ile metin arasına en ince ayrım: gölge değil, sıvanın kendi parlaklığı. */
+}
+
+/* Aydınlık sıva (Yedi Eşik koridoru): koyu teal mürekkep. */
+.koyu {
+  --murekkep: #0e4a46;
+  --soluk: rgba(14, 74, 70, 0.66);
+  --hayalet: rgba(14, 74, 70, 0.42);
+  --cyan: #0d7d92;
+  --cta-zemin: #0e4a46;
+  --cta-metin: #f7fbf9;
+  --kunye-cizgi: rgba(14, 74, 70, 0.18);
+  /* Duvar ile metin arasına en ince ayrım: gölge değil, sıvanın parlaklığı. */
   text-shadow: 0 1px 22px rgba(247, 251, 249, 0.75);
+}
+
+/* Koyu şaft (Sirkülasyon Çekirdeği): açık mürekkep. */
+.acik {
+  --murekkep: #f2f9f8;
+  --soluk: rgba(242, 249, 248, 0.7);
+  --hayalet: rgba(242, 249, 248, 0.44);
+  --cyan: #5fd8ea;
+  --cta-zemin: #f2f9f8;
+  --cta-metin: #06323b;
+  --kunye-cizgi: rgba(242, 249, 248, 0.2);
+  text-shadow: 0 2px 26px rgba(4, 32, 38, 0.6);
 }
 
 /* Canlı mod: duraklar üst üste yığılıp koridorun ilerisinde duruyor. */
@@ -127,7 +145,7 @@
 .kunye {
   margin-top: 1.3rem;
   padding-top: 1rem;
-  border-top: 1px solid rgba(14, 74, 70, 0.18);
+  border-top: 1px solid var(--kunye-cizgi);
   font-family: var(--font-mono);
   font-size: 0.72rem;
   letter-spacing: 0.04em;
@@ -149,8 +167,8 @@
   align-items: center;
   padding: 0.92rem 1.8rem;
   border-radius: 999px;
-  background: var(--murekkep);
-  color: #f7fbf9;
+  background: var(--cta-zemin);
+  color: var(--cta-metin);
   font-family: var(--font-govde);
   font-size: 0.92rem;
   font-weight: 500;

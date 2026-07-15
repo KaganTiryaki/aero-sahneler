@@ -550,6 +550,23 @@ export function CekirdekSahnesi({ disiplinler, sinif }: Props) {
     let calisiyor = false;
     const saat = new THREE.Clock();
 
+    /*
+     * Tırmanış: sayfanın scroll'u kamerayı şaftta yukarı taşır. Menzil son
+     * sahanlığın kotundan türetiliyor — sabit sayı yazılırsa SAHANLIK_Y
+     * değiştiğinde kamera ya tavana girer ya da yolun yarısında kalır.
+     * Göz son sahanlığın biraz altında durur: tepede boşluğa çıkmıyoruz.
+     */
+    const TIRMANIS = SAHANLIK_Y[SAHANLIK_Y.length - 1] - GOZ.y - 1.6;
+    let yumusakTirmanis = 0;
+
+    const scrollTirmanisi = () => {
+      const max = Math.max(
+        1,
+        document.documentElement.scrollHeight - window.innerHeight,
+      );
+      return Math.min(1, Math.max(0, window.scrollY / max)) * TIRMANIS;
+    };
+
     const ciz = () => {
       const dt = Math.min(saat.getDelta(), 0.05);
       const t = saat.getElapsedTime();
@@ -557,10 +574,17 @@ export function CekirdekSahnesi({ disiplinler, sinif }: Props) {
       fare.x += (hedef.x - fare.x) * 0.045;
       fare.y += (hedef.y - fare.y) * 0.045;
 
+      // Scroll = merdiveni TIRMANMAK. Sahne eskiden dipte çakılıydı ve sayfa
+      // hiç kaydırılamıyordu; oysa "sirkülasyon çekirdeği" mimarlıkta zaten
+      // bir binanın merdiven çekirdeği — durup bakılan değil, İÇİNDEN GEÇİLEN
+      // yer. Yumuşatma scroll'un basamaklı gelmesini süzer.
+      yumusakTirmanis +=
+        (scrollTirmanisi() - yumusakTirmanis) * Math.min(1, 5 * dt);
+
       // Yalnız transform: konum kayması gerçek paralaks, rotasyon ±1.5° tat.
       kamera.position.set(
         GOZ.x + fare.x * 0.2,
-        GOZ.y - fare.y * 0.14 + Math.sin(t * 0.22) * 0.05,
+        GOZ.y + yumusakTirmanis - fare.y * 0.14 + Math.sin(t * 0.22) * 0.05,
         GOZ.z + fare.x * 0.06,
       );
       pE.set(fare.y * P, -fare.x * P, 0);

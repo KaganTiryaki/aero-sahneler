@@ -34,7 +34,19 @@ const PERSPEKTIF = 2.15; // ölçek tabanı: pow(2.15, d)
 /** Metin bloğunu kapı boşluğunun üstündeki aydınlık sıvaya çeken taban kayma. */
 const SIVA_KAYMASI = -142;
 
-export function Yolculuk({ duraklar }: { duraklar: readonly Istasyon[] }) {
+/**
+ * ton: sahnenin duvarı hangi değerde?
+ *  · "koyu"  → aydınlık sıva üstünde koyu teal mürekkep (Yedi Eşik koridoru)
+ *  · "acik"  → koyu şaft/taş üstünde açık mürekkep (Sirkülasyon Çekirdeği)
+ * Yanlış ton = metin duvarda kaybolur; sahneye göre seçilmek ZORUNDA.
+ */
+export function Yolculuk({
+  duraklar,
+  ton = "koyu",
+}: {
+  duraklar: readonly Istasyon[];
+  ton?: "koyu" | "acik";
+}) {
   const kapRef = useRef<HTMLDivElement>(null);
   const yolRef = useRef<HTMLDivElement>(null);
   const ogeRef = useRef<(HTMLElement | null)[]>([]);
@@ -124,7 +136,7 @@ export function Yolculuk({ duraklar }: { duraklar: readonly Istasyon[] }) {
           ref={(el) => {
             ogeRef.current[i] = el;
           }}
-          className={`${styles.duvar} ${styles[d.tur]}`}
+          className={`${styles.duvar} ${styles[d.tur]} ${styles[ton]}`}
         >
           {d.kicker && <p className={styles.kicker}>{d.kicker}</p>}
 

@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Fraunces, Hanken_Grotesk, IBM_Plex_Mono } from "next/font/google";
-import { site, hero, nav, disciplines, teams } from "@/lib/content";
+import { site, hero, nav, disciplines } from "@/lib/content";
+import { istasyonlariKur } from "@/components/yolculuk/istasyonlar";
 import { Cekirdek } from "./Cekirdek";
 
 // latin-ext ZORUNLU: İ ı ş ğ ç ö ü. Yoksa tofu.
@@ -33,30 +34,19 @@ export const metadata: Metadata = {
 /** Türkçe büyütme: i→İ, ı→I. Düz toUpperCase() bunu bozar. */
 const trBuyuk = (s: string) => s.toLocaleUpperCase("tr");
 
-/**
- * content.ts'te hero için bir lede alanı YOK ve bu mockup lib/'e dokunamıyor.
- * teams.intro'nun ilk cümlesi bir BÖLÜM girişi ("Çalıştayı hazırlayan ekipler
- * ve başkanları."), hero cümlesi değil. Son cümle ise tam olarak bu sayfanın
- * işini anlatıyor: başvurunca ne oluyor. Kopya yine content.ts'ten geliyor
- * (hardcode yok), yalnız doğru cümle seçiliyor.
- * KALICI ÇÖZÜM: content.ts'e hero.lede eklemek.
- */
-const sonCumle = (s: string) => s.trim().split(/(?<=\.)\s+/).at(-1) ?? s;
-
 export default function SirkulasyonCekirdegiSayfasi() {
+  // Duraklar Yedi Eşik ile aynı kaynaktan: bir şaft katı = bir durak.
+  const duraklar = istasyonlariKur();
+
   return (
     <div className={`${baslik.variable} ${govde.variable} ${mono.variable}`}>
       <Cekirdek
         marka={site.school}
-        etkinlik={site.event}
-        yil={site.year}
-        durum={trBuyuk(hero.status)}
-        lede={sonCumle(teams.intro)}
         cta={hero.cta}
-        ctaNot={hero.ctaNote}
         ctaHref={site.applyUrl}
         navLinkleri={nav.links}
         disiplinler={disciplines.map((d) => trBuyuk(d.name))}
+        duraklar={duraklar}
       />
     </div>
   );

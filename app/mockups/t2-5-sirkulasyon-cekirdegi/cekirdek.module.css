@@ -23,8 +23,14 @@
   -webkit-font-smoothing: antialiased;
 }
 
+/*
+ * FIXED, absolute değil. Yolculuk sayfayı ~15300px'e uzatıyor; absolute iken
+ * kanvas .kok'un TAM BOYUNA gerilip sahneyi kadrajın dışına atıyordu (şaft
+ * tamamen kayboluyor, geriye düz bir zemin kalıyordu). Scroll sahneyi
+ * kaydırmaz — sahnenin İÇİNDE yukarı tırmandırır.
+ */
 .tuval {
-  position: absolute;
+  position: fixed;
   inset: 0;
   z-index: 0;
 }
@@ -36,7 +42,8 @@
 /* Film greni: soluk sis gradyanında kaçınılmaz olan bant kırılmasını öldürür
    ve taşa tutuş verir. Tekdüze — gradyan değil, yani perde değil. */
 .gren {
-  position: absolute;
+  /* fixed: bkz. .tuval — scroll ile gerilmemeli */
+  position: fixed;
   inset: -50%;
   z-index: 1;
   pointer-events: none;
@@ -49,7 +56,8 @@
    metnin oturduğu alt-orta bandı neredeyse hiç karartmıyor. Yani metne
    kontrast HEDİYE ETMİYOR; panel testi bu katman olmadan da geçiyor. */
 .vinyet {
-  position: absolute;
+  /* fixed: bkz. .tuval */
+  position: fixed;
   inset: 0;
   z-index: 1;
   pointer-events: none;
@@ -63,7 +71,9 @@
 /* ---- üst bar ------------------------------------------------------------ */
 
 .ust {
-  position: absolute;
+  /* fixed: bkz. .tuval — absolute iken sayfanın tepesinde kalıp scroll'la
+     kadrajdan çıkıyordu; şaftı tırmanırken marka/nav görünür kalmalı. */
+  position: fixed;
   z-index: 3;
   top: 0;
   left: 0;
