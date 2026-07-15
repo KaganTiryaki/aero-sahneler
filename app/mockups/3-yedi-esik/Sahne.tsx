@@ -49,18 +49,8 @@ export function Sahne({
         </nav>
       </header>
 
+      {/* Duvarlar + yolculuğun scroll boşluğu; ikisi de Yolculuk'un içinde. */}
       <Yolculuk duraklar={duraklar} />
-
-      {/*
-        Scroll boşluğu: yolculuğun uzunluğu. Bir istasyon = bir eşik, yani
-        her 100svh'de tam bir kapıdan geçiyorsun. Yolculuk canlıyken duraklar
-        fixed olduğu için sayfa yüksekliğini taşıyan tek şey burası.
-      */}
-      <div
-        className={styles.yol}
-        style={{ height: `${duraklar.length * 100}svh` }}
-        aria-hidden="true"
-      />
 
       <div className={styles.alt}>
         <span>{isaret}</span>

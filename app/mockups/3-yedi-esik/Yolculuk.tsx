@@ -36,14 +36,21 @@ const SIVA_KAYMASI = -142;
 
 export function Yolculuk({ duraklar }: { duraklar: readonly Istasyon[] }) {
   const kapRef = useRef<HTMLDivElement>(null);
+  const yolRef = useRef<HTMLDivElement>(null);
   const ogeRef = useRef<(HTMLElement | null)[]>([]);
 
   useEffect(() => {
     const kap = kapRef.current;
-    if (!kap) return;
+    const yol = yolRef.current;
+    if (!kap || !yol) return;
+    // reduced-motion: base katman düz bir belge. Yolculuk açılmaz, dolayısıyla
+    // scroll boşluğu da yükseklik almaz — yoksa okunur metnin altında 1700svh
+    // boşluk kalırdı.
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
 
     kap.dataset.canli = "1";
+    // Bir istasyon = bir eşik = 100svh.
+    yol.style.height = `${duraklar.length * 100}svh`;
 
     let id = 0;
     let bekliyor = false;
@@ -104,11 +111,13 @@ export function Yolculuk({ duraklar }: { duraklar: readonly Istasyon[] }) {
       window.removeEventListener("scroll", kaydirildi);
       window.removeEventListener("resize", kaydirildi);
       delete kap.dataset.canli;
+      yol.style.height = "";
     };
   }, [duraklar.length]);
 
   return (
-    <div ref={kapRef} className={styles.kap}>
+    <>
+      <div ref={kapRef} className={styles.kap}>
       {duraklar.map((d, i) => (
         <article
           key={`${d.baslik}-${i}`}
@@ -152,6 +161,14 @@ export function Yolculuk({ duraklar }: { duraklar: readonly Istasyon[] }) {
           )}
         </article>
       ))}
-    </div>
+      </div>
+
+      {/*
+        Yolculuğun uzunluğu. Duraklar canlıyken fixed olduğu için sayfaya
+        yüksekliği veren tek şey burası; yüksekliği effect veriyor, yani
+        reduced-motion'da 0 kalıyor.
+      */}
+      <div ref={yolRef} className={styles.yol} aria-hidden="true" />
+    </>
   );
 }
