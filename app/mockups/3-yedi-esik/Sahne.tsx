@@ -35,7 +35,8 @@ export function Sahne({
     <div className={styles.root}>
       {/* Koridor: sabit, scroll'la bir oda ilerliyor. */}
       <div className={styles.sahne}>
-        <EnfiladSahnesi />
+        {/* Metin artık sahnenin İÇİNDE: duraklar duvarların yüzüne yazılıyor. */}
+        <EnfiladSahnesi duraklar={duraklar} />
       </div>
 
       <header className={styles.ust}>
@@ -50,7 +51,7 @@ export function Sahne({
       </header>
 
       {/* Duvarlar + yolculuğun scroll boşluğu; ikisi de Yolculuk'un içinde. */}
-      <Yolculuk duraklar={duraklar} />
+      <Yolculuk duraklar={duraklar} gorsel={false} />
 
       <div className={styles.alt}>
         <span>{isaret}</span>

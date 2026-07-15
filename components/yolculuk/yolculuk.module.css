@@ -82,6 +82,17 @@
   transform-origin: 50% 42%;
 }
 
+/*
+ * Metni 3B sahne taşıyor (duvarların yüzüne basılı). Duraklar DOM'da KALIR —
+ * ekran okuyucu ve JS'siz tarayıcı okumaya devam eder — ama çizilmez; yoksa
+ * aynı metin hem duvarda hem havada belirir. display:none DEĞİL: o, erişim
+ * ağacından da siler.
+ */
+.kap[data-gizli] {
+  clip-path: inset(50%);
+  pointer-events: none;
+}
+
 /* ---- tipografi --------------------------------------------------------- */
 
 .kicker {

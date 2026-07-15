@@ -43,9 +43,17 @@ const SIVA_KAYMASI = -142;
 export function Yolculuk({
   duraklar,
   ton = "koyu",
+  gorsel = true,
 }: {
   duraklar: readonly Istasyon[];
   ton?: "koyu" | "acik";
+  /**
+   * false: metni 3B sahne taşıyor (duvarların yüzüne basılı). Duraklar DOM'da
+   * kalır — ekran okuyucu ve JS'siz tarayıcı okumaya devam eder — ama görsel
+   * olarak çizilmez; yoksa aynı metin hem duvarda hem havada belirir.
+   * Scroll boşluğunu yine bu bileşen verir, çünkü sahne scroll'a bağlı.
+   */
+  gorsel?: boolean;
 }) {
   const kapRef = useRef<HTMLDivElement>(null);
   const yolRef = useRef<HTMLDivElement>(null);
@@ -61,6 +69,8 @@ export function Yolculuk({
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
 
     kap.dataset.canli = "1";
+    // Metni 3B sahne taşıyorsa duraklar DOM'da kalır ama çizilmez.
+    if (!gorsel) kap.dataset.gizli = "1";
     // Bir istasyon = bir eşik = 100svh.
     yol.style.height = `${duraklar.length * 100}svh`;
 
@@ -123,9 +133,10 @@ export function Yolculuk({
       window.removeEventListener("scroll", kaydirildi);
       window.removeEventListener("resize", kaydirildi);
       delete kap.dataset.canli;
+      delete kap.dataset.gizli;
       yol.style.height = "";
     };
-  }, [duraklar.length]);
+  }, [duraklar.length, gorsel]);
 
   return (
     <>

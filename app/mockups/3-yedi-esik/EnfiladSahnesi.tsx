@@ -23,7 +23,7 @@ import {
   SHIFT_M,
   SHIFT_P,
   SIVA_BEYAZ,
-  TABAN_HIZ,
+
   TAN_YATAY_MIN,
   TAVAN_Y,
   TOZ_KUTU_Z,
@@ -36,6 +36,11 @@ import {
   tozFragment,
   tozVertex,
 } from "./golgeleyiciler";
+import type { Istasyon } from "@/components/yolculuk/istasyonlar";
+import { kitabeleriKur } from "./kitabe";
+
+/** Kitabe mürekkebi: sıva aydınlık, yazı koyu teal. */
+const MUREKKEP = "#0b3f43";
 
 const RAD = Math.PI / 180;
 const TAN_YARIM = Math.tan((FOV_PENCERE / 2) * RAD); // 0.364
@@ -117,12 +122,28 @@ function olumMesafesi(en: number, boy: number, tanYarim: number) {
   return Math.max(4, Math.min(sagSove, solSove, lento, zeminCizgisi) - 0.4);
 }
 
-export function EnfiladSahnesi() {
+export function EnfiladSahnesi({
+  duraklar,
+}: {
+  duraklar: readonly Istasyon[];
+}) {
   const kapRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const kap = kapRef.current;
     if (!kap) return;
+
+    // Kitabeler font yüklendikten SONRA pişer (bkz. kitabe.ts); o ana kadar
+    // duvarlar boş sıva. iptal: efekt sökülürse geç gelen dokuları çöpe at.
+    let iptal = false;
+    let kitabeler: THREE.CanvasTexture[] = [];
+    const bosDoku = new THREE.DataTexture(
+      new Uint8Array([0, 0, 0, 0]),
+      1,
+      1,
+      THREE.RGBAFormat,
+    );
+    bosDoku.needsUpdate = true;
 
     const azHareket = window.matchMedia("(prefers-reduced-motion: reduce)");
     const kabaIsaret = window.matchMedia("(pointer: coarse)");
@@ -169,15 +190,69 @@ export function EnfiladSahnesi() {
       },
     });
 
-    /* ---- yedi duvar ----------------------------------------------------- */
+    /*
+     * ---- yedi duvar -------------------------------------------------------
+     * Treadmill'de duvarlar geri dönüşüyor, yani duvarın kalıcı bir kimliği
+     * YOK. Kitabeyi bağlamak için her duvara bir istasyon sayacı taşıtıyoruz:
+     * başlangıçta i, her sarmada +DUVAR_SAYI. Böylece yürüdükçe aynı yedi mesh
+     * sırayla 0,1,2… istasyonlarını taşıyor ve metin mimariyle senkron kalıyor.
+     *
+     * Malzeme artık PAYLAŞILMIYOR: her duvarın kendi kitabesi var, dolayısıyla
+     * kendi uYazi uniform'u olmalı.
+     */
     const duvarGeo = duvarGeometrisi();
     const duvarlar: THREE.Mesh[] = [];
+    const duvarMatler: THREE.ShaderMaterial[] = [];
+    const duvarIst: number[] = [];
     for (let i = 0; i < DUVAR_SAYI; i++) {
-      const m = new THREE.Mesh(duvarGeo, sivaMat);
+      const mat = sivaMat.clone();
+      mat.uniforms.uYazi = { value: bosDoku };
+      mat.uniforms.uYaziVar = { value: 0 };
+      mat.uniforms.uMurekkep = { value: sabitRenk(MUREKKEP) };
+      const m = new THREE.Mesh(duvarGeo, mat);
       m.position.z = -(ODA_ARALIK * (i + 1));
       sahne.add(m);
       duvarlar.push(m);
+      duvarMatler.push(mat);
+      /*
+       * i DEĞİL i-1: okunan duvar bir oda İLERİDE (~34 birim).
+       * 17 birimdeki duvarın yüzü kadrajı taşıyor, kitabesi okunmuyor; 34'teki
+       * ise tam oturuyor — RENDER'DA ÖLÇÜLDÜ. Böylece durak N'yi hep rahat
+       * mesafede okuyorsun, en yakın duvar ise az önce okuyup geçtiğin eşik.
+       */
+      duvarIst.push(i);
     }
+
+    /** Duvara o an taşıdığı istasyonun kitabesini giydirir. */
+    const kitabeGiydir = (i: number) => {
+      const ist = duvarIst[i];
+      const dok = ist >= 0 && ist < kitabeler.length ? kitabeler[ist] : null;
+      duvarMatler[i].uniforms.uYazi.value = dok ?? bosDoku;
+      duvarMatler[i].uniforms.uYaziVar.value = dok ? 1 : 0;
+    };
+
+    /*
+     * Fontlar CSS değişkenlerinden okunuyor: next/font hash'li aile adları
+     * üretiyor, elle yazılamaz. Doku fontlar HAZIR olduktan sonra pişer —
+     * erken pişerse Türkçe glifler yedek fontla basılır ve bir daha düzelmez.
+     */
+    const cs = getComputedStyle(kap);
+    const fontlar = {
+      baslik: cs.getPropertyValue("--font-baslik").trim() || "Georgia, serif",
+      govde: cs.getPropertyValue("--font-govde").trim() || "system-ui",
+      mono: cs.getPropertyValue("--font-mono").trim() || "monospace",
+    };
+    void kitabeleriKur(duraklar, fontlar).then((d) => {
+      if (iptal) {
+        d.forEach((t) => t.dispose());
+        return;
+      }
+      kitabeler = d;
+      duvarlar.forEach((_, i) => kitabeGiydir(i));
+      // reduced-motion'da rAF hiç çalışmıyor: kitabe geç geldiği için tek kare
+      // yeniden çizilmeli, yoksa duvarlar sonsuza dek boş sıva kalır.
+      if (statik) cizer.render(sahne, kamera);
+    });
 
     /* ---- zemin + tavan: koridoru gerçek bir mekân yapan yakınsayan çizgiler */
     // 34 (yarı 17) kadraja yetmiyordu: d>29'da zemin/tavan kenarı görünüyor,
@@ -251,19 +326,34 @@ export function EnfiladSahnesi() {
     boyutla();
 
     /* ---- treadmill + scroll --------------------------------------------- */
-    let akis = 0;
     let yumusak = 0;
-    let onceki = 0;
 
-    const yurut = (dAkis: number) => {
-      akis += dAkis;
-      for (const d of duvarlar) {
-        d.position.z += dAkis;
-        if (d.position.z > -olum) d.position.z -= PERIYOT;
-        else if (d.position.z < -olum - PERIYOT) d.position.z += PERIYOT;
-      }
-      sivaMat.uniforms.uAkis.value = akis;
-      tozMat.uniforms.uAkis.value = akis;
+    /*
+     * Duvarın yeri ve taşıdığı istasyon, YÜRÜNEN YOLDAN doğrudan türetilir —
+     * sarma geçmişi biriktirilmez.
+     *
+     * Önceki hâl akis'i kare kare biriktirip sarmalarda duvarIst'i ±7
+     * kaydırıyordu. Tarayıcının scroll restorasyonu ile yarışınca akis
+     * NEGATİFE düşüyor (ölçüldü: -32) ve sayaç da onunla birlikte bozulup
+     * istasyonları -3'e indiriyordu: bütün duvarlar sessizce boşalıyordu.
+     * Durumsuz hesap bu sınıf hatayı tümüyle kaldırıyor.
+     */
+    const konumla = (yol: number) => {
+
+      duvarlar.forEach((d, i) => {
+        const sarmasiz = -(ODA_ARALIK * (i + 1)) + yol;
+        const sarma = Math.floor((sarmasiz + olum) / PERIYOT) + 1;
+        d.position.z = sarmasiz - sarma * PERIYOT;
+        // Kitabe EN YAKIN duvarda okunur: yandaki panel ancak orada açık kalır,
+        // arka duvarların yanları öndeki duvarın kapı boşluğunca kırpılıyor.
+        const ist = i + sarma * DUVAR_SAYI;
+        if (ist !== duvarIst[i]) {
+          duvarIst[i] = ist;
+          kitabeGiydir(i);
+        }
+        duvarMatler[i].uniforms.uAkis.value = yol;
+      });
+      tozMat.uniforms.uAkis.value = yol;
     };
 
     const scrollAkisi = () => {
@@ -284,9 +374,9 @@ export function EnfiladSahnesi() {
       const dt = Math.min(saat.getDelta(), 0.05);
       tozMat.uniforms.uZaman.value = saat.elapsedTime;
 
+      // yumusak MUTLAK yol (0…SCROLL_MESAFE), fark biriktirilmiyor.
       yumusak += (scrollAkisi() - yumusak) * Math.min(1, 6 * dt);
-      yurut(TABAN_HIZ * dt + (yumusak - onceki));
-      onceki = yumusak;
+      konumla(yumusak);
 
       cizer.render(sahne, kamera);
       id = requestAnimationFrame(ciz);
@@ -296,7 +386,8 @@ export function EnfiladSahnesi() {
       if (calisiyor || statik) return;
       calisiyor = true;
       saat.getDelta();
-      onceki = yumusak = scrollAkisi();
+      yumusak = scrollAkisi();
+      konumla(yumusak);
       id = requestAnimationFrame(ciz);
     };
     const dur = () => {
@@ -327,6 +418,8 @@ export function EnfiladSahnesi() {
     ro.observe(kap);
 
     return () => {
+      // Kitabeler asenkron pişiyor: sökülmüş sahneye geç doku yazılmasın.
+      iptal = true;
       dur();
       io.disconnect();
       ro.disconnect();
@@ -336,11 +429,14 @@ export function EnfiladSahnesi() {
       kapakGeo.dispose();
       tozGeo.dispose();
       sivaMat.dispose();
+      duvarMatler.forEach((m) => m.dispose());
+      kitabeler.forEach((t) => t.dispose());
+      bosDoku.dispose();
       tozMat.dispose();
       cizer.dispose();
       cizer.domElement.remove();
     };
-  }, []);
+  }, [duraklar]);
 
   return (
     <div

@@ -1,4 +1,12 @@
-import { RAMPA_US, TAVAN_Y, UZAK, ZEMIN_Y } from "./enfilad";
+import {
+  DUVAR_ALT,
+  DUVAR_EN,
+  DUVAR_UST,
+  RAMPA_US,
+  TAVAN_Y,
+  UZAK,
+  ZEMIN_Y,
+} from "./enfilad";
 
 /**
  * Sıva gölgeleyicisi — duvar / zemin / tavan / kapak aynı malzemeyi paylaşır.
@@ -30,6 +38,10 @@ uniform vec3 uDerin;
 uniform vec3 uBeyaz;
 uniform vec3 uCyan;
 uniform float uAkis;
+/** Kitabe: duvarın yüzüne basılı yazının kapsama haritası (yalnız alfa). */
+uniform sampler2D uYazi;
+uniform float uYaziVar;
+uniform vec3 uMurekkep;
 
 varying vec3 vW;
 varying vec3 vN;
@@ -107,6 +119,22 @@ void main() {
     // derinleşir. Bu bir CSS perdesi değil — sahnenin kendi ışığı.
     float rr = length(vec2(vW.x / 10.5, (vW.y + 0.9) / 8.0));
     col *= 1.09 - 0.32 * smoothstep(0.45, 2.35, rr);
+
+    // --- kitabe: yazı duvarın SIVASINA basılı ---------------------------
+    // Metin ekranın ortasında yüzen bir katman değil; duvarın kendisinde.
+    // UV duvarın yerel yüzünden türetiliyor: x/y treadmill'de sabit, yalnız
+    // z kayıyor — yani doku duvarla birlikte yaklaşıp eğiliyor.
+    if (uYaziVar > 0.5) {
+      vec2 yuv = vec2(
+        (vW.x + ${(DUVAR_EN / 2).toFixed(2)}) / ${DUVAR_EN.toFixed(2)},
+        (${DUVAR_UST.toFixed(2)} - vW.y) / ${(DUVAR_UST - DUVAR_ALT).toFixed(2)}
+      );
+      float ink = texture2D(uYazi, yuv).a;
+      // Uzaktaki duvarın yazısı piksel altına düşüp titriyor: derinlikle söndür,
+      // yoksa kaçış noktası okunmaz bir karınca yuvasına dönüyor.
+      ink *= 1.0 - smoothstep(0.16, 0.46, k);
+      col = mix(col, uMurekkep, ink);
+    }
   }
 
   // --- derin uç: kaçış noktası küçük ve koyu bir delik olarak kalsın ----
