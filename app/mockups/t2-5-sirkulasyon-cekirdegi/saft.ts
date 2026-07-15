@@ -29,7 +29,8 @@ export const SAFT = {
   kuyuZ: 2.6,
   /** Kolların koşu sınırı; |x| > kosuX bölgesi sahanlıktır. */
   kosuX: 3.0,
-  tavanY: 26.5,
+  /** 26.5 → 61: saft 7 koldan 17 kola cikti (son sahanlik 57.55). */
+  tavanY: 61,
   duvarKalin: 0.4,
   sahanlikKalin: 0.34,
   kolKalin: 0.28,
@@ -37,13 +38,27 @@ export const SAFT = {
 } as const;
 
 /**
- * Yedi sahanlık = yedi disiplin. Aralıklar BİLEREK eşit değil (3.35 · 3.25 ·
- * 3.55 · 3.15 · 3.65 · 3.15 · 3.60). Eşit aralık + simetri = Escher/Vertigo
+ * Bir sahanlık = bir durak. Yolculuk 17 durak (kahraman + vizyon + misyon +
+ * ekiplerimiz + 9 komite + süreç + 2 SSS + kapanış), yani şaft 17 kol yükselir.
+ *
+ * Aralıklar BİLEREK eşit değil. Eşit aralık + simetri = Escher/Vertigo
  * klişesinin ta kendisi; jüri bunu pazarlık dışı saydı. Sapma, kadrajda
  * "perspektif" gibi okunacak kadar küçük, ritmi mekanik olmaktan çıkaracak
- * kadar büyük.
+ * kadar büyük. Yedi elemanlı asal-benzeri desen tekrarlanıyor: örüntü 17 kolda
+ * kendini tekrar etmiyor.
  */
-export const SAHANLIK_Y = [3.35, 6.6, 10.15, 13.3, 16.95, 20.1, 23.7] as const;
+const KOT_ARTIS = [3.35, 3.25, 3.55, 3.15, 3.65, 3.15, 3.6] as const;
+export const KOL_SAYI = 17;
+
+export const SAHANLIK_Y: readonly number[] = (() => {
+  const out: number[] = [];
+  let y = 0;
+  for (let i = 0; i < KOL_SAYI; i++) {
+    y += KOT_ARTIS[i % KOT_ARTIS.length];
+    out.push(Number(y.toFixed(2)));
+  }
+  return out;
+})();
 
 /** +1 = sağ (x>0), -1 = sol. Sahanlıklar sırayla yer değiştirir. */
 export const sahanlikYon = (i: number) => (i % 2 === 0 ? 1 : -1);
@@ -62,7 +77,37 @@ export const KOL_EN = SAFT.zMax - SAFT.kuyuZ; // 2.7
  * aydınlanan şey karşı duvar (z = zMin) ve sahanlık burunlarıdır; kameranın
  * durduğu dip kotuna hiçbir doğrudan ışık düşmez.
  */
-export const PENCERE = { x0: 0.2, x1: 4.3, y0: 17.6, y1: 21.8 } as const;
+/**
+ * Pencereler — kolların üçte birinde bir, z = zMax duvarında.
+ *
+ * Eskiden TEK pencere vardı (y 17.6–21.8) ve şaft 26.5 birimdi. Şaft 17 kola
+ * çıkınca 61 birim oldu: tek pencere yalnız %36 kotunu aydınlatır, üstü kör
+ * karanlık kalırdı. Işık artık tırmanış boyunca tekrarlıyor — her birkaç kolda
+ * bir yandan giriyor, yani yükseldikçe aydınlıktan aydınlığa geçiyorsun.
+ *
+ * x tarafı dönüşümlü: ışık bir sağdan bir soldan çapraz iniyor, sahanlıklar
+ * ters yönlere gölge düşürüyor. Tek yönlü olsaydı şaft tekdüze şeritlenirdi.
+ */
+export const PENCERELER: readonly {
+  x0: number;
+  x1: number;
+  y0: number;
+  y1: number;
+}[] = SAHANLIK_Y.flatMap((y, i) => {
+  if (i % 3 !== 1) return [];
+  const sag = ((i / 3) | 0) % 2 === 0;
+  return [
+    {
+      x0: sag ? 0.2 : -4.3,
+      x1: sag ? 4.3 : -0.2,
+      y0: y - 1.9,
+      y1: y + 2.3,
+    },
+  ];
+});
+
+/** Işık yönü hesabı için temsilî pencere (ilki). */
+export const PENCERE = PENCERELER[0];
 
 /**
  * Pencereden giren ışının yönü: -x'e doğru, aşağı, ve -z (karşı duvara).
@@ -125,6 +170,48 @@ export function kollar(): Kol[] {
   }
   return out;
 }
+
+/** Kol listesi bir kez kurulur: tırmanış yolu her karede çağrılıyor. */
+const KOLLAR = kollar();
+
+/** Kolun kaç birim yürüdüğü; kalanı sahanlıkta dönüşe ayrılır. */
+const KOL_PAYI = 0.78;
+
+/**
+ * TIRMANIŞ YOLU — t ∈ [0, KOL_SAYI] boyunca merdivenin üstündeki ayak izi.
+ *
+ * Kamera artık kuyunun dibinde durup yukarı BAKMIYOR; merdiveni ÇIKIYOR.
+ * Yol gerçek doğrama merdivenin kendisi: kolda X boyunca yukarı yürü, sahanlıkta
+ * Z'ye geçerek dön, sonraki kolda ters yönde yukarı. x ve y kol ile sahanlık
+ * arasında sürekli (kol i'nin bitişi = kol i+1'in başlangıcı); değişen tek şey
+ * Z — yani sahanlık, kuyunun etrafından dolaşman.
+ */
+export function tirmanisYolu(t: number, out: THREE.Vector3): THREE.Vector3 {
+  const k = Math.min(KOL_SAYI - 1, Math.max(0, Math.floor(t)));
+  const u = Math.min(1, Math.max(0, t - k));
+  const kol = KOLLAR[k];
+
+  if (u <= KOL_PAYI) {
+    const s = u / KOL_PAYI;
+    return out.set(
+      kol.x0 + (kol.x1 - kol.x0) * s,
+      kol.y0 + (kol.y1 - kol.y0) * s,
+      kol.zMerkez,
+    );
+  }
+
+  // Sahanlık: x ve y sabit, Z karşı kola geçiyor.
+  const s = (u - KOL_PAYI) / (1 - KOL_PAYI);
+  const sonraki = KOLLAR[Math.min(KOL_SAYI - 1, k + 1)];
+  return out.set(
+    kol.x1,
+    kol.y1,
+    kol.zMerkez + (sonraki.zMerkez - kol.zMerkez) * s,
+  );
+}
+
+/** Göz, basamağın kaç birim üstünde. 1.56 m ≈ göz hizası. */
+export const GOZ_BOY = 1.56;
 
 /** Koşu yönüne dik, DAİMA yukarı bakan birim vektör (ters kollarda da). */
 export function dikYukari(k: Kol) {

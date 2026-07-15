@@ -3,10 +3,12 @@
 import { useEffect, useRef } from "react";
 import * as THREE from "three";
 import {
+  GOZ_BOY,
   ISIK_YON,
+  KOL_SAYI,
   KOL_EN,
   PALET,
-  PENCERE,
+  PENCERELER,
   SAFT,
   SAHANLIK_DERIN,
   SAHANLIK_EN,
@@ -22,6 +24,7 @@ import {
   saftUniformlari,
   sisliBasic,
   sisliStandart,
+  tirmanisYolu,
 } from "./saft";
 
 /*
@@ -104,7 +107,6 @@ export function CekirdekSahnesi({ disiplinler, sinif }: Props) {
     kamera.position.copy(GOZ);
     kamera.lookAt(BAK);
     kamera.rotateZ(THREE.MathUtils.degToRad(ROLL_DER));
-    const temelQ = kamera.quaternion.clone();
 
     cizer.setPixelRatio(Math.min(window.devicePixelRatio, kaba ? 1.5 : 1.75)); // DPR tavanı
     cizer.setSize(kap.clientWidth || 1, kap.clientHeight || 1);
@@ -126,8 +128,10 @@ export function CekirdekSahnesi({ disiplinler, sinif }: Props) {
     // Tek yönlü kaynak = pencereden giren gün ışığı. Paralel ışın, sert kenar.
     // Bloom YOK: parlaklık pozdan ve sisin renginden geliyor.
     const gunes = new THREE.DirectionalLight(0xeafdff, 3.6);
-    const merkez = new THREE.Vector3(0, 14, 0);
-    gunes.position.copy(merkez).addScaledVector(ISIK_YON, -30);
+    // Şaft 26.5 → 61 birime çıktı: merkez 14'te kalırsa üst yarı ışığın
+    // frustumu DIŞINDA kalır ve three orayı gölgesiz, yani düz aydınlık sayar.
+    const merkez = new THREE.Vector3(0, SAFT.tavanY / 2, 0);
+    gunes.position.copy(merkez).addScaledVector(ISIK_YON, -46);
     gunes.target.position.copy(merkez);
     gunes.castShadow = true;
     gunes.shadow.mapSize.set(kaba ? 1024 : 2048, kaba ? 1024 : 2048);
@@ -138,12 +142,13 @@ export function CekirdekSahnesi({ disiplinler, sinif }: Props) {
     // testinin dayandığı bölge sahnenin en parlak yeri oluyordu.
     // Işık merkezden 30 uzakta, şaftın yarıçapı ~15.3 → ±16.5 / near 10 / far 50.
     const s = gunes.shadow.camera;
-    s.left = -16.5;
-    s.right = 16.5;
-    s.top = 16.5;
-    s.bottom = -16.5;
-    s.near = 10;
-    s.far = 50;
+    // Frustum saftin TAMAMINI sarmali: 61 birimlik sacak yari-capi ~33.
+    s.left = -34;
+    s.right = 34;
+    s.top = 34;
+    s.bottom = -34;
+    s.near = 12;
+    s.far = 84;
     s.updateProjectionMatrix();
     gunes.shadow.bias = -0.0006;
     gunes.shadow.normalBias = 0.03;
@@ -208,13 +213,17 @@ export function CekirdekSahnesi({ disiplinler, sinif }: Props) {
     duvarSekli.lineTo(SAFT.xMax, SAFT.tavanY);
     duvarSekli.lineTo(SAFT.xMin, SAFT.tavanY);
     duvarSekli.closePath();
-    const delik = new THREE.Path();
-    delik.moveTo(PENCERE.x0, PENCERE.y0);
-    delik.lineTo(PENCERE.x1, PENCERE.y0);
-    delik.lineTo(PENCERE.x1, PENCERE.y1);
-    delik.lineTo(PENCERE.x0, PENCERE.y1);
-    delik.closePath();
-    duvarSekli.holes.push(delik);
+    // Şaft 61 birim: TEK pencere yalnız alt üçte biri aydınlatırdı. Her birkaç
+    // kolda bir, dönüşümlü yanlarda — tırmandıkça ışıktan ışığa geçiyorsun.
+    for (const p of PENCERELER) {
+      const delik = new THREE.Path();
+      delik.moveTo(p.x0, p.y0);
+      delik.lineTo(p.x1, p.y0);
+      delik.lineTo(p.x1, p.y1);
+      delik.lineTo(p.x0, p.y1);
+      delik.closePath();
+      duvarSekli.holes.push(delik);
+    }
 
     const pencereDuvarGeo = izle(
       new THREE.ExtrudeGeometry(duvarSekli, { depth: t, bevelEnabled: false }),
@@ -227,18 +236,20 @@ export function CekirdekSahnesi({ disiplinler, sinif }: Props) {
 
     // Pencerenin kendisi: kadrajın arkasında kalır, ama mazgaldan yansıyan
     // parlaklığı verir. Additive DEĞİL — additive paleti beyaza kaydırırdı.
-    const camGeo = izle(
-      new THREE.PlaneGeometry(PENCERE.x1 - PENCERE.x0, PENCERE.y1 - PENCERE.y0),
-    );
     const camMat = izle(sisliBasic({ color: PALET.pencere }, u));
-    const cam = new THREE.Mesh(camGeo, camMat);
-    cam.position.set(
-      (PENCERE.x0 + PENCERE.x1) / 2,
-      (PENCERE.y0 + PENCERE.y1) / 2,
-      SAFT.zMax + t + 0.02,
-    );
-    cam.rotation.y = Math.PI;
-    sahne.add(cam);
+    for (const p of PENCERELER) {
+      const camGeo = izle(
+        new THREE.PlaneGeometry(p.x1 - p.x0, p.y1 - p.y0),
+      );
+      const cam = new THREE.Mesh(camGeo, camMat);
+      cam.position.set(
+        (p.x0 + p.x1) / 2,
+        (p.y0 + p.y1) / 2,
+        SAFT.zMax + t + 0.02,
+      );
+      cam.rotation.y = Math.PI;
+      sahne.add(cam);
+    }
 
     /* ---- sahanlıklar: ExtrudeGeometry + pahlı burun ---------------------- */
     // Pah (bevel) süs değil: burun taşının yalayan ışığı yakalayan yüzü.
@@ -556,8 +567,14 @@ export function CekirdekSahnesi({ disiplinler, sinif }: Props) {
      * değiştiğinde kamera ya tavana girer ya da yolun yarısında kalır.
      * Göz son sahanlığın biraz altında durur: tepede boşluğa çıkmıyoruz.
      */
-    const TIRMANIS = SAHANLIK_Y[SAHANLIK_Y.length - 1] - GOZ.y - 1.6;
+    /*
+     * Tırmanış artık BİRİM değil KOL sayısıyla ölçülüyor: scroll doğrudan
+     * yolun t parametresini sürüyor (0 → KOL_SAYI). Her 100svh bir kol.
+     */
+    const TIRMANIS = KOL_SAYI - 0.05;
     let yumusakTirmanis = 0;
+    const ayak = new THREE.Vector3();
+    const ileri = new THREE.Vector3();
 
     const scrollTirmanisi = () => {
       const max = Math.max(
@@ -581,14 +598,26 @@ export function CekirdekSahnesi({ disiplinler, sinif }: Props) {
       yumusakTirmanis +=
         (scrollTirmanisi() - yumusakTirmanis) * Math.min(1, 5 * dt);
 
-      // Yalnız transform: konum kayması gerçek paralaks, rotasyon ±1.5° tat.
+      /*
+       * POV: kamera merdivenin ÜSTÜNDE, kolun yönünde yürüyor ve bakışı da
+       * yolun ilerisine kilitli. Eskiden kuyunun dibinde durup yukarı bakıyordu
+       * — "merdiven çıkmak" değil "merdiven boşluğuna bakmak"tı.
+       * Bakış noktası yolun 0.3 ilerisi: kolda yukarı bakıyorsun, sahanlığa
+       * gelince baş kendiliğinden dönüyor, çünkü yol orada Z'ye kıvrılıyor.
+       */
+      tirmanisYolu(yumusakTirmanis, ayak);
+      tirmanisYolu(Math.min(KOL_SAYI - 0.02, yumusakTirmanis + 0.3), ileri);
+
       kamera.position.set(
-        GOZ.x + fare.x * 0.2,
-        GOZ.y + yumusakTirmanis - fare.y * 0.14 + Math.sin(t * 0.22) * 0.05,
-        GOZ.z + fare.x * 0.06,
+        ayak.x + fare.x * 0.16,
+        ayak.y + GOZ_BOY - fare.y * 0.1 + Math.sin(t * 0.22) * 0.04,
+        ayak.z + fare.x * 0.05,
       );
+      kamera.lookAt(ileri.x, ileri.y + GOZ_BOY, ileri.z);
+      kamera.rotateZ(THREE.MathUtils.degToRad(ROLL_DER));
+      // Fare paralaksı bakışın ÜSTÜNE binen küçük bir tat; yolu ezmiyor.
       pE.set(fare.y * P, -fare.x * P, 0);
-      kamera.quaternion.copy(temelQ).multiply(pQ.setFromEuler(pE));
+      kamera.quaternion.multiply(pQ.setFromEuler(pE));
 
       havaGuncelle(dt);
       cizer.render(sahne, kamera);
