@@ -76,204 +76,46 @@
   }
 }
 
-/* ---- kahraman ---------------------------------------------------------- */
-.kahraman {
-  position: relative; /* .ust / .alt bu bölüme çıpalanır, tüm sayfaya değil */
-  min-height: 100svh;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  text-align: center;
-  padding: 19svh clamp(1.1rem, 5vw, 3rem) 14svh;
-}
-
-.kicker {
-  font-family: var(--font-mono), ui-monospace, monospace;
-  font-size: 0.66rem;
-  letter-spacing: 0.28em;
-  color: var(--mur-3);
-  display: flex;
-  align-items: center;
-  gap: 0.85rem;
-}
-
-.nokta {
-  width: 5px;
-  height: 5px;
-  border-radius: 50%;
-  background: #22b8dc;
-  box-shadow: 0 0 0 4px rgba(34, 184, 220, 0.16);
-}
-
-.baslik {
-  margin: 1.5rem 0 0;
-  font-family: var(--font-baslik), Georgia, serif;
-  font-weight: 300;
-  font-size: clamp(2.6rem, 7.4vw, 5.6rem);
-  line-height: 0.94;
-  letter-spacing: -0.025em;
-  max-width: 15ch;
-}
-
-.yil {
-  font-style: italic;
-  color: var(--mur-3);
-}
-
-.lede {
-  margin: 1.35rem 0 0;
-  font-size: clamp(0.78rem, 1.05vw, 0.9rem);
-  letter-spacing: 0.12em;
-  color: var(--mur-3);
-  max-width: 44ch;
-  line-height: 1.7;
-}
+/* ---- yol: yolculuğun uzunluğu ------------------------------------------ */
 
 /*
- * Kaçış noktası kadrajın DEĞİŞMEZ %62'sindedir (SHIFT_P) — tipografiye değil,
- * pencereye bağlıdır. Bu boşluk sabit 15svh olduğunda CTA'nın yeri h1'in kaç
- * satır sardığına göre kayıyordu: mobilde tam deliğin/toz kümesinin üstüne
- * oturup ctaNot'u okunmaz hâle getiriyordu (390x844'te ölçüldü).
- * flex:1 ile boşluk artan alanı yutar → CTA her zaman alt padding'in hemen
- * üstüne, yani deliğin ALTINA çıpalanır. Sarma sayısı artık hiçbir şeyi kaydırmaz.
+ * Duraklar canlıyken fixed olduğu için sayfaya yüksekliği veren tek şey bu.
+ * Yüksekliği Sahne.tsx istasyon sayısından hesaplıyor: bir istasyon = 100svh
+ * = bir eşik. Bu blok olmadan sayfa kaydırılamaz — Sirkülasyon Çekirdeği'nin
+ * takıldığı yer tam olarak burasıydı.
  */
-.esikBoslugu {
-  flex: 1 1 auto;
-  min-height: 3.25rem;
+.yol {
+  position: relative;
+  z-index: 0;
+  pointer-events: none;
 }
 
-.cta {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.7rem;
-  padding: 0.95rem 1.9rem;
-  border-radius: 999px;
-  background: var(--mur-2);
-  color: #eef7f6;
-  text-decoration: none;
-  font-size: 0.85rem;
-  font-weight: 500;
-  letter-spacing: 0.02em;
-  transition: transform 0.6s cubic-bezier(0.16, 1, 0.3, 1),
-    background-color 0.6s cubic-bezier(0.16, 1, 0.3, 1);
-}
-.cta:hover {
-  transform: translateY(-2px);
-  background: #0e4a46;
-}
-
-.ok {
-  transition: transform 0.6s cubic-bezier(0.16, 1, 0.3, 1);
-}
-.cta:hover .ok {
-  transform: translateX(4px);
-}
-
-.ctaNot {
-  margin: 0.85rem 0 0;
-  font-family: var(--font-mono), ui-monospace, monospace;
-  font-size: 0.63rem;
-  letter-spacing: 0.1em;
-  color: var(--mur-4);
-}
-
+/* ---- alt şerit --------------------------------------------------------- */
 .alt {
-  position: absolute;
-  bottom: 0;
+  position: fixed;
   left: 0;
   right: 0;
+  bottom: 0;
+  z-index: 3;
   display: flex;
+  align-items: center;
   justify-content: space-between;
   gap: 1rem;
-  padding: 1.5rem clamp(1.1rem, 4vw, 3.4rem);
+  padding: 1.1rem clamp(1.1rem, 4vw, 3.4rem);
   font-family: var(--font-mono), ui-monospace, monospace;
-  font-size: 0.62rem;
-  letter-spacing: 0.12em;
+  font-size: 0.6rem;
+  letter-spacing: 0.18em;
   color: var(--mur-4);
+  pointer-events: none;
 }
 
 .alt a {
-  color: inherit;
+  color: var(--mur-3);
   text-decoration: none;
-}
-.alt a:hover {
-  color: var(--mur);
+  pointer-events: auto;
 }
 
-/* ---- yedi eşik: friz ---------------------------------------------------- */
-/* Disiplinler çember üzerinde değil, bir DİZİ olarak: yatay friz, üst
-   bantta — kaçış noktasının deliği frizin altında kalır. */
-.friz {
-  min-height: 100svh;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  padding: 14svh clamp(1.1rem, 4vw, 3.4rem) 0;
-}
-
-.frizKicker {
-  font-family: var(--font-mono), ui-monospace, monospace;
-  font-size: 0.63rem;
-  letter-spacing: 0.28em;
-  color: var(--mur-3);
-  margin-bottom: 2.6rem;
-}
-
-.esikler {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 1.6rem 1.4rem;
-  width: 100%;
-  max-width: 1180px;
-  list-style: none;
-  margin: 0;
-  padding: 0;
-}
-
-@media (min-width: 720px) {
-  .esikler {
-    grid-template-columns: repeat(4, minmax(0, 1fr));
-  }
-}
-@media (min-width: 1080px) {
-  .esikler {
-    grid-template-columns: repeat(7, minmax(0, 1fr));
-    gap: 0 1.1rem;
-  }
-}
-
-.esik {
-  border-top: 1px solid var(--mur-4);
-  padding-top: 0.85rem;
-}
-
-.esikNo {
-  font-family: var(--font-mono), ui-monospace, monospace;
-  font-size: 0.62rem;
-  letter-spacing: 0.16em;
-  color: var(--mur-4);
-}
-
-.esikAd {
-  margin: 0.5rem 0 0.45rem;
-  font-family: var(--font-baslik), Georgia, serif;
-  font-weight: 400;
-  font-size: 1.28rem;
-  line-height: 1.1;
-  letter-spacing: -0.01em;
-}
-
-.esikNot {
-  margin: 0;
-  font-size: 0.72rem;
-  line-height: 1.55;
-  color: var(--mur-3);
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .cta,
-  .ok,
-  .bag {
-    transition: none;
-  }
+.ust {
+  position: fixed;
+  z-index: 3;
 }

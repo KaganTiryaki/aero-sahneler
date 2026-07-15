@@ -1,6 +1,8 @@
 "use client";
 
 import dynamic from "next/dynamic";
+import type { Istasyon } from "./istasyonlar";
+import { Yolculuk } from "./Yolculuk";
 import styles from "./yedi.module.css";
 
 /**
@@ -13,102 +15,58 @@ const EnfiladSahnesi = dynamic(
 );
 
 export type Bag = { readonly label: string; readonly href: string };
-export type Disiplin = { readonly name: string; readonly note: string };
 
 export function Sahne({
   marka,
-  durum,
-  etkinlik,
-  yil,
-  cta,
-  ctaNot,
-  ctaHref,
   baglar,
-  disiplinler,
   instagram,
   instagramEtiket,
   isaret,
+  duraklar,
 }: {
   marka: string;
-  durum: string;
-  etkinlik: string;
-  yil: string;
-  cta: string;
-  ctaNot: string;
-  ctaHref: string;
   baglar: readonly Bag[];
-  disiplinler: readonly Disiplin[];
   instagram: string;
   instagramEtiket: string;
   isaret: string;
+  duraklar: readonly Istasyon[];
 }) {
   return (
     <div className={styles.root}>
+      {/* Koridor: sabit, scroll'la bir oda ilerliyor. */}
       <div className={styles.sahne}>
         <EnfiladSahnesi />
       </div>
 
-      <div className={styles.icerik}>
-        <section className={styles.kahraman}>
-          <header className={styles.ust}>
-            <span className={styles.marka}>{marka}</span>
-            <nav className={styles.baglar}>
-              {baglar.map((b) => (
-                <a key={b.href} className={styles.bag} href={b.href}>
-                  {b.label}
-                </a>
-              ))}
-            </nav>
-          </header>
-
-          <p className={styles.kicker}>
-            <span className={styles.nokta} />
-            {durum}
-          </p>
-
-          <h1 className={styles.baslik}>
-            {etkinlik} <span className={styles.yil}>{yil}</span>
-          </h1>
-
-          <p className={styles.lede}>
-            {disiplinler.map((d) => d.name).join(" · ")}
-          </p>
-
-          <div className={styles.esikBoslugu} />
-
-          <a
-            className={styles.cta}
-            href={ctaHref}
-            target="_blank"
-            rel="noreferrer"
-          >
-            {cta}
-            <span className={styles.ok}>→</span>
-          </a>
-          <p className={styles.ctaNot}>{ctaNot}</p>
-
-          <div className={styles.alt}>
-            <span>{isaret}</span>
-            <a href={instagram} target="_blank" rel="noreferrer">
-              {instagramEtiket}
+      <header className={styles.ust}>
+        <span className={styles.marka}>{marka}</span>
+        <nav className={styles.baglar}>
+          {baglar.map((b) => (
+            <a key={b.href} className={styles.bag} href={b.href}>
+              {b.label}
             </a>
-          </div>
-        </section>
+          ))}
+        </nav>
+      </header>
 
-        <section className={styles.friz}>
-          <p className={styles.frizKicker}>{etkinlik}</p>
-          <ul className={styles.esikler}>
-            {disiplinler.map((d, i) => (
-              <li key={d.name} className={styles.esik}>
-                <span className={styles.esikNo}>
-                  {String(i + 1).padStart(2, "0")}
-                </span>
-                <h2 className={styles.esikAd}>{d.name}</h2>
-                <p className={styles.esikNot}>{d.note}</p>
-              </li>
-            ))}
-          </ul>
-        </section>
+      <Yolculuk duraklar={duraklar} />
+
+      {/*
+        Scroll boşluğu: yolculuğun uzunluğu. Bir istasyon = bir eşik, yani
+        her 100svh'de tam bir kapıdan geçiyorsun. Yolculuk canlıyken duraklar
+        fixed olduğu için sayfa yüksekliğini taşıyan tek şey burası.
+      */}
+      <div
+        className={styles.yol}
+        style={{ height: `${duraklar.length * 100}svh` }}
+        aria-hidden="true"
+      />
+
+      <div className={styles.alt}>
+        <span>{isaret}</span>
+        <a href={instagram} target="_blank" rel="noreferrer">
+          {instagramEtiket}
+        </a>
       </div>
     </div>
   );

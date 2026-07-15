@@ -47,7 +47,22 @@ export const RAMPA_US = 2.4; // arkaya yüklü eğri: yakın odalar uzun süre s
 
 /* ---- hareket ----------------------------------------------------------- */
 export const TABAN_HIZ = 0.55; // birim/sn — asla varmayan yürüyüş
-export const SCROLL_MESAFE = 136; // scroll boyunca kat edilen ek yol
+
+/**
+ * Yolculuk 17 durak: kahraman + vizyon + misyon + ekiplerimiz + 9 komite +
+ * süreç + 2 SSS + kapanış. (istasyonlar.ts'ten geliyor; oradaki dizi değişirse
+ * burası da değişmeli — senkron bozulursa metin ile mimari birbirinden kayar.
+ * Tarayıcıda sayıldı: 17.)
+ */
+export const ISTASYON_SAYI = 17;
+
+/**
+ * BİR İSTASYON = BİR EŞİK. Scroll boyunca kat edilen yol, tam olarak
+ * (durak-1) × oda aralığı: her 100svh'de kamera bir kapıdan geçiyor ve o
+ * duvarın metni okunur konuma geliyor. Sabit bir sayı yazmak (eski hâli: 136)
+ * bu senkronu bozuyordu.
+ */
+export const SCROLL_MESAFE = ODA_ARALIK * (ISTASYON_SAYI - 1);
 export const TOZ_KUTU_Z = 164; // toz sarma aralığı
 
 /* ---- palet: tek hue ailesi (koyu teal ↔ beyaz) + tek cyan kaldırma ----- */

@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Fraunces, Hanken_Grotesk, IBM_Plex_Mono } from "next/font/google";
-import { disciplines, hero, nav, site } from "@/lib/content";
+import { nav, site } from "@/lib/content";
+import { istasyonlariKur } from "./istasyonlar";
 import { Sahne } from "./Sahne";
 
 // latin-ext ZORUNLU: İ ı ş ğ ç ö ü. Yoksa tofu.
@@ -21,34 +22,32 @@ const govde = Hanken_Grotesk({
 
 const mono = IBM_Plex_Mono({
   subsets: ["latin", "latin-ext"],
-  weight: ["400"],
+  weight: ["400", "500"],
   variable: "--font-mono",
   display: "swap",
 });
 
 export const metadata: Metadata = {
   title: `Yedi Eşik · ${site.event} ${site.year}`,
+  description:
+    "Yedi eşikten geçen bir koridor. Kaydırdıkça bir oda ilerliyor, önündeki duvar sana çalıştayı anlatıyor.",
 };
 
 /** Türkçe büyütme: i→İ, ı→I. Düz toUpperCase() bunu bozar. */
 const trBuyuk = (s: string) => s.toLocaleUpperCase("tr");
 
 export default function YediEsik() {
+  const duraklar = istasyonlariKur();
+
   return (
     <main className={`${baslik.variable} ${govde.variable} ${mono.variable}`}>
       <Sahne
         marka={site.school}
-        durum={trBuyuk(hero.status)}
-        etkinlik={site.event}
-        yil={site.year}
-        cta={hero.cta}
-        ctaNot={hero.ctaNote}
-        ctaHref={site.applyUrl}
         baglar={nav.links}
-        disiplinler={disciplines}
         instagram={site.socials.instagram}
         instagramEtiket={site.socials.instagramHandle}
         isaret={trBuyuk(site.navMark)}
+        duraklar={duraklar}
       />
     </main>
   );
