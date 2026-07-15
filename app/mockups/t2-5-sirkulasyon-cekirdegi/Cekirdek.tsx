@@ -33,7 +33,11 @@ export function Cekirdek({
     <main className={stil.kok}>
       {/* Sahne UI'ın ARKASINDA yaşar ve kadrajın tamamını doldurur: metin
           sahnenin yanına kaçmıyor, şaftın dibinde duruyor. */}
-      <CekirdekSahnesi sinif={stil.tuval} disiplinler={disiplinler} />
+      <CekirdekSahnesi
+        sinif={stil.tuval}
+        disiplinler={disiplinler}
+        duraklar={duraklar}
+      />
       <div className={stil.vinyet} aria-hidden="true" />
       <div className={stil.gren} aria-hidden="true" />
 
@@ -59,7 +63,13 @@ export function Cekirdek({
         her durakta önümüze çıkan duvar bir sonraki bilgiyi taşıyor. Şaft koyu
         olduğu için mürekkep açık.
       */}
-      <Yolculuk duraklar={duraklar} ton="acik" />
+      {/*
+        Metni artık 3B sahne taşıyor: her durak, kolun karşısındaki uç duvarda
+        basılı. Duraklar DOM'da kalıyor (ekran okuyucu + JS'siz tarayıcı) ama
+        çizilmiyor — yoksa aynı metin hem duvarda hem havada belirir.
+        Scroll boşluğunu yine bu bileşen veriyor.
+      */}
+      <Yolculuk duraklar={duraklar} ton="acik" gorsel={false} />
     </main>
   );
 }

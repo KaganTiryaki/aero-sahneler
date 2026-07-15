@@ -2,6 +2,8 @@
 
 import { useEffect, useRef } from "react";
 import * as THREE from "three";
+import type { Istasyon } from "@/components/yolculuk/istasyonlar";
+import { kitabeleriKur, PANEL_BOY, PANEL_EN } from "./kitabe";
 import {
   GOZ_BOY,
   ISIK_YON,
@@ -73,10 +75,11 @@ const PARALAKS_DER = 1.5;
 
 type Props = {
   disiplinler: readonly string[];
+  duraklar: readonly Istasyon[];
   sinif?: string;
 };
 
-export function CekirdekSahnesi({ disiplinler, sinif }: Props) {
+export function CekirdekSahnesi({ disiplinler, duraklar, sinif }: Props) {
   const kapRef = useRef<HTMLDivElement>(null);
   const disRef = useRef(disiplinler);
   disRef.current = disiplinler;
@@ -411,6 +414,58 @@ export function CekirdekSahnesi({ disiplinler, sinif }: Props) {
     korkuluklar.instanceMatrix.needsUpdate = true;
     korkuluklar.computeBoundingSphere();
     sahne.add(korkuluklar);
+
+    /* ---- kitabeler: kolun karşısındaki UÇ DUVARDA ------------------------ */
+    /*
+     * Kol i'yi çıkarken tam karşındaki uç duvara yürüyorsun: kitabe yolun
+     * ucunda duruyor, yaklaştıkça büyüyor, sahanlığa varınca göz hizasında,
+     * dönünce arkanda kalıyor. Sahanlıklar taraf değiştirdiği için duvar da
+     * bir sağda bir solda — sol/sağ dönüşümü mimariden geliyor.
+     */
+    // (iptal bayrağı aşağıda zaten tanımlı: geç gelen dokuları çöpe atmak için)
+    const panelGeo = izle(new THREE.PlaneGeometry(PANEL_EN, PANEL_BOY));
+    const panelMatler: THREE.Material[] = [];
+    const fontAilesi = (ad: string, yedek: string) =>
+      getComputedStyle(kap).getPropertyValue(ad).trim() || yedek;
+
+    void kitabeleriKur(duraklar, {
+      baslik: fontAilesi("--font-baslik", "Georgia, serif"),
+      govde: fontAilesi("--font-govde", "system-ui"),
+      mono: fontAilesi("--font-mono", "monospace"),
+    }).then((dokular) => {
+      if (iptal) {
+        dokular.forEach((d) => d.dispose());
+        return;
+      }
+      dokular.forEach((doku, i) => {
+        if (i >= SAHANLIK_Y.length) return;
+        izle(doku);
+        const mat = izle(
+          sisliBasic(
+            { map: doku, color: PALET.etiket, transparent: true, depthWrite: false },
+            u,
+          ),
+        );
+        panelMatler.push(mat);
+        const m = new THREE.Mesh(panelGeo, mat);
+        const yon = sahanlikYon(i);
+        /*
+         * Z, şaftın merkezi (0) DEĞİL kolun kendi merkezi. Kol z=∓3.4'te
+         * koşuyor; panel 0'da bırakılınca duvar karşında değil 3.4 birim
+         * YANINDA kalıyordu — RENDER'DA GÖRÜLDÜ. Kolun z'sine oturunca
+         * kitabe yolun tam ucunda.
+         */
+        m.position.set(
+          yon * (SAFT.xMax - 0.02),
+          SAHANLIK_Y[i] + 1.35,
+          kolListe[i].zMerkez,
+        );
+        // Düzlem varsayılan +Z bakar; içeri döndür.
+        m.rotation.y = -yon * Math.PI / 2;
+        sahne.add(m);
+      });
+      if (statik) cizer.render(sahne, kamera);
+    });
 
     /* ---- disiplin etiketleri: sahanlığın burun taşında ------------------- */
     // Yükseğe gittikçe okunmaz olur ve bu BİLEREK: hepsini birden göremezsin.
